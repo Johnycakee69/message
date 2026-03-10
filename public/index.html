@@ -689,24 +689,30 @@
       document.addEventListener('click', () => picker.classList.remove('show'), { once: true });
     }
 
-    function addReaction(msgId, emoji, row) {
-      if (!reactions[msgId]) reactions[msgId] = {};
-      reactions[msgId][emoji] = (reactions[msgId][emoji] || 0) + 1;
-      renderReactions(msgId);
+    // rowMap stores row elements so we can spawn hearts on the right spot
+    const rowMap = {};
 
-      if (emoji === '❤️') {
-        const rect = row.getBoundingClientRect();
-        for (let i = 0; i < 6; i++) {
+    function addReaction(msgId, emoji, row) {
+      rowMap[msgId] = row;
+      socket.emit('react_message', { msgId, emoji });
+    }
+
+    // Server broadcasts reaction updates to all users
+    socket.on('reaction_update', ({ msgId, reactions: data }) => {
+      renderReactions(msgId, data);
+      if (data['❤️'] > 0 && rowMap[msgId]) {
+        const rect = rowMap[msgId].getBoundingClientRect();
+        for (let i = 0; i < 5; i++) {
           setTimeout(() => spawnHeart(rect.left + Math.random() * rect.width, rect.top + rect.height / 2), i * 90);
         }
       }
-    }
+    });
 
-    function renderReactions(msgId) {
+    function renderReactions(msgId, data) {
       const bar = document.getElementById(`reactions-${msgId}`);
       if (!bar) return;
       bar.innerHTML = '';
-      const entries = Object.entries(reactions[msgId]).filter(([,c]) => c > 0);
+      const entries = Object.entries(data).filter(([,c]) => c > 0);
       if (!entries.length) { bar.classList.remove('visible'); return; }
       bar.classList.add('visible');
       entries.forEach(([emoji, count]) => {
@@ -714,8 +720,7 @@
         chip.className = 'reaction-chip';
         chip.innerHTML = `${emoji}<span class="count">${count > 1 ? count : ''}</span>`;
         chip.addEventListener('click', () => {
-          reactions[msgId][emoji] = Math.max(0, (reactions[msgId][emoji] || 1) - 1);
-          renderReactions(msgId);
+          socket.emit('unreact_message', { msgId, emoji });
         });
         bar.appendChild(chip);
       });
