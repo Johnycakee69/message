@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
     const message = {
       username,
       text: data.text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Phnom_Penh' }),
       id: Date.now()
     };
     // Broadcast to everyone (including sender)
@@ -80,5 +80,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`✅ Messenger running at http://localhost:${PORT}`);
 });
-// Time Zone
-time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
